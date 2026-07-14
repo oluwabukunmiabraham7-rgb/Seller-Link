@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Central | Seller Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --orange: #f68b1e; --green: #2ecc71; --grey: #f4f7f6; --blue: #3498db; --red: #ff4757; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--grey); padding-bottom: 40px; }
+
+        /* Auth Panel Styles */
+        .auth-container { max-width: 400px; margin: 60px auto; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .auth-toggle { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .auth-btn { flex: 1; padding: 12px; background: none; border: none; font-weight: bold; color: #888; cursor: pointer; }
+        .auth-btn.active { color: var(--orange); border-bottom: 3px solid var(--orange); }
+
+        /* Dashboard Workspace Styles */
+        .dashboard-layout { display: none; }
+        .dashboard-layout.active { display: block; }
+        
+        .seller-nav { background: white; display: flex; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
+        .nav-tab { flex: 1; padding: 18px; text-align: center; font-weight: bold; color: #888; border-bottom: 4px solid transparent; cursor: pointer; font-size: 14px; }
+        .nav-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+        .section { display: none; padding: 20px; max-width: 500px; margin: 0 auto; }
+        .section.active { display: block; }
+
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { font-size: 22px; margin-top: 0; margin-bottom: 20px; color: #111; }
+        
+        .input-box { margin-bottom: 15px; }
+        .label-text { display: block; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; background: #fff; box-sizing: border-box; font-size: 15px; outline: none; }
+        
+        .image-group { background: #f9f9f9; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px dashed #ddd; }
+        .btn-action { width: 100%; background: var(--orange); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; text-transform: uppercase; }
+        .btn-logout { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        .product-item { display: flex; align-items: center; gap: 12px; background: #fff; padding: 10px; border-radius: 12px; margin-top: 10px; border: 1px solid #eee; }
+        .product-item img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; }
+
+        .order-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 8px solid var(--blue); }
+        .order-id-tag { background: #333; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; }
+        .order-items-box { background: #f7f9fc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin: 12px 0; }
+        .order-item-row { font-size: 13px; border-bottom: 1px dashed #e2e8f0; padding: 6px 0; display: flex; justify-content: space-between; }
+        .order-item-row:last-child { border: none; }
+    </style>
+</head>
+<body>
+
+<!-- SECTION 1: SELLER REGISTRATION & LOGIN -->
+<div class="auth-container" id="authWorkspace">
+    <div class="auth-toggle">
+        <button class="auth-btn active" id="btnToLogin" onclick="switchAuthMode('login')">Seller Login</button>
+        <button class="auth-btn" id="btnToRegister" onclick="switchAuthMode('register')">Create Store</button>
+    </div>
+    
+    <h2 id="authTitle" style="text-align: center;">Welcome Back</h2>
+    
+    <div class="input-box id-register-only" style="display: none;">
+        <span class="label-text">Business / Store Name</span>
+        <input type="text" id="authStoreName" placeholder="e.g. Alaba Styles">
+    </div>
+    <div class="input-box">
+        <span class="label-text">Email Address</span>
+        <input type="email" id="authEmail" placeholder="vendor@example.com">
+    </div>
+    <div class="input-box">
+        <span class="label-text">Password</span>
+        <input type="password" id="authPassword" placeholder="••••••••">
+    </div>
+    
+    <button class="btn-action" id="mainAuthSubmitBtn" style="margin-top: 10px;">Access Dashboard</button>
+</div>
+
+<!-- SECTION 2: SELLER PORTAL WORKSPACE -->
+<div class="dashboard-layout" id="dashboardWorkspace">
+    <div style="background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee;">
+        <div>
+            <span style="font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase;">Logged in Store:</span>
+            <div id="activeStoreLabel" style="font-size: 18px; font-weight: bold; color: var(--orange);">Loading...</div>
+        </div>
+        <button class="btn-logout" id="logOutBtn">Logout</button>
+    </div>
+
+    <div class="seller-nav">
+        <div class="nav-tab active" id="tab-add">Upload Goods</div>
+        <div class="nav-tab" id="tab-my-items">My Stock</div>
+        <div class="nav-tab" id="tab-my-orders">My Sales</div>
+    </div>
+
+    <!-- TAB 2A: UPLOAD GOODS -->
+    <div id="sec-add" class="section active">
+        <div class="card">
+            <h2>Add New Product</h2>
+            <div class="input-box"><input type="text" id="pName" placeholder="Product Name *"></div>
+            <div class="input-box"><input type="text" id="pPrice" placeholder="Price (₦) * e.g. 12,500"></div>
+            <!-- INTEGRATED DELIVERY AMOUNT INPUT -->
+            <div class="input-box"><input type="text" id="pDelivery" placeholder="Delivery Fee (₦) * e.g. 2,500"></div>
+            
+            <div class="image-group">
+                <span class="label-text" style="color:var(--orange)">Product Images (URLs)</span>
+                <div class="input-box"><input type="text" id="pImg1" placeholder="Image 1 (Main Cover) *"></div>
+                <div class="input-box"><input type="text" id="pImg2" placeholder="Image 2 (Optional)"></div>
+                <div class="input-box"><input type="text" id="pImg3" placeholder="Image 3 (Optional)"></div>
+            </div>
+
+            <div class="input-box"><input type="text" id="pSizes" placeholder="Sizes (e.g. 40, 41, 42 or M, L)"></div>
+            <div class="input-box"><input type="text" id="pColors" placeholder="Colors (e.g. Black, White)"></div>
+            
+            <div class="input-box">
+                <select id="pCat">
+                    <option selected disabled>Select Category *</option>
+                    <option value="Clothes">Clothes</option>
+                    <option value="Shoes & Sliders">Shoes & Sliders</option>
+                    <option value="Watches">Watches</option>
+                    <option value="Perfumes">Perfumes</option>
+                    <option value="Boxers & Singlets">Boxers & Singlets</option>
+                    <option value="Caps">Caps</option>
+                    <option value="Belts & Chains">Belts & Chains</option>
+                </select>
+            </div>
+            <button class="btn-action" id="sellerUploadBtn">Publish Item</button>
+        </div>
+    </div>
+
+    <!-- TAB 2B: MANAGING OWN GOODS -->
+    <div id="sec-my-items" class="section">
+        <div class="card">
+            <h2>Your Live Stock</h2>
+            <div id="sellerProductList"></div>
+        </div>
+    </div>
+
+    <!-- TAB 2C: SALES COMPARTMENT ONLY SHOWING OWNED MATCHING ITEMS -->
+    <div id="sec-my-orders" class="section">
+        <h2>Orders for Your Goods</h2>
+        <div id="sellerOrderList"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = { 
+        apiKey: "AIzaSyC1w8tUDW6XTfkPceprjj1kJed9CM5r6YA", 
+        authDomain: "enitan-collection-7e541.firebaseapp.com", 
+        projectId: "enitan-collection-7e541" 
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentSellerUser = null;
+    let authMode = "login";
+
+    // Navigation tab functionality
+    const tabs = { add: document.getElementById('tab-add'), items: document.getElementById('tab-my-items'), orders: document.getElementById('tab-my-orders') };
+    const secs = { add: document.getElementById('sec-add'), items: document.getElementById('sec-my-items'), orders: document.getElementById('sec-my-orders') };
+
+    Object.keys(tabs).forEach(key => {
+        tabs[key].addEventListener('click', () => {
+            Object.values(tabs).forEach(t => t.classList.remove('active'));
+            Object.values(secs).forEach(s => s.classList.remove('active'));
+            tabs[key].classList.add('active');
+            secs[key].classList.add('active');
+        });
+    });
+
+    // Toggle between login and registration entry blocks
+    window.switchAuthMode = (mode) => {
+        authMode = mode;
+        if(mode === 'register') {
+            document.getElementById('btnToRegister').classList.add('active');
+            document.getElementById('btnToLogin').classList.remove('active');
+            document.querySelectorAll('.id-register-only').forEach(el => el.style.display = 'block');
+            document.getElementById('authTitle').innerText = "Create Seller Account";
+            document.getElementById('mainAuthSubmitBtn').innerText = "Register & Open Store";
+        } else {
+            document.getElementById('btnToLogin').classList.add('active');
+            document.getElementById('btnToRegister').classList.remove('active');
+            document.querySelectorAll('.id-register-only').forEach(el => el.style.display = 'none');
+            document.getElementById('authTitle').innerText = "Welcome Back";
+            document.getElementById('mainAuthSubmitBtn').innerText = "Access Dashboard";
+        }
+    };
+
+    // Authentication processing controller with absolute strict validation
+    document.getElementById('mainAuthSubmitBtn').onclick = async () => {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const storeName = document.getElementById('authStoreName').value.trim();
+
+        if(!email || !password) return alert("Please fill all email and password fields!");
+
+        try {
+            if(authMode === "register") {
+                if(!storeName) return alert("Please supply a business store name!");
+                const credential = await createUserWithEmailAndPassword(auth, email, password);
+                await updateProfile(credential.user, { displayName: storeName });
+                alert("Account registration successful! Welcome to your dashboard.");
+            } else {
+                // Try logging in the seller
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+        } catch(error) {
+            // Catches missing or wrong registration metadata accounts strictly
+            if (error.code === 'auth/user-not-found' || error.message.includes('user-not-found') || error.code === 'auth/invalid-credential') {
+                alert("This account does not exist or invalid credentials! You must click 'Create Store' to register an account before you can log in.");
+            } else if (error.code === 'auth/wrong-password' || error.message.includes('wrong-password')) {
+                alert("Incorrect password! Please try again.");
+            } else {
+                alert("Auth Error: " + error.message);
+            }
+        }
+    };
+
+    document.getElementById('logOutBtn').onclick = () => { signOut(auth); };
+
+    // Auth State Monitor Core
+    onAuthStateChanged(auth, (user) => {
+        if(user) {
+            currentSellerUser = user;
+            document.getElementById('authWorkspace').style.display = "none";
+            document.getElementById('dashboardWorkspace').classList.add('active');
+            document.getElementById('activeStoreLabel').innerText = user.displayName || "Independent Vendor";
+            
+            runLiveInventoryListener(user.uid);
+            runLiveOrdersListener(user.displayName || "Store Main");
+        } else {
+            currentSellerUser = null;
+            document.getElementById('dashboardWorkspace').classList.remove('active');
+            document.getElementById('authWorkspace').style.display = "block";
+        }
+    });
+
+    // Product Upload Process Flow incorporating custom delivery logic fields
+    document.getElementById('sellerUploadBtn').onclick = async () => {
+        if(!currentSellerUser) return;
+        const name = document.getElementById('pName').value.trim();
+        const rawPrice = document.getElementById('pPrice').value.trim();
+        const rawDelivery = document.getElementById('pDelivery').value.trim();
+        const img1 = document.getElementById('pImg1').value.trim();
+        const img2 = document.getElementById('pImg2').value.trim();
+        const img3 = document.getElementById('pImg3').value.trim();
+        const cat = document.getElementById('pCat').value;
+        const sizes = document.getElementById('pSizes').value.trim();
+        const colors = document.getElementById('pColors').value.trim();
+
+        if(!name || !rawPrice || !rawDelivery || !img1 || !cat) return alert("Fields marked with an asterisk are required!");
+        
+        const cleanPrice = Number(rawPrice.replace(/,/g, ''));
+        const cleanDelivery = Number(rawDelivery.replace(/,/g, ''));
+        
+        if(isNaN(cleanPrice) || isNaN(cleanDelivery)) return alert("Please insert valid numeric details for product price and delivery amount.");
+
+        const imagesArr = [img1, img2, img3].filter(url => url !== "");
+
+        try {
+            await addDoc(collection(db, "products"), {
+                name: name,
+                price: cleanPrice,
+                deliveryFee: cleanDelivery, // Secure delivery value attachment assignment
+                image: img1,
+                images: imagesArr,
+                category: cat,
+                sizes: sizes || "N/A",
+                colors: colors || "N/A",
+                sellerId: currentSellerUser.uid, 
+                sellerName: currentSellerUser.displayName || "Store Main", 
+                timestamp: serverTimestamp()
+            });
+            alert("Your product is now live on the store!");
+            document.querySelectorAll('#sec-add input').forEach(i => i.value = "");
+            document.getElementById('pCat').selectedIndex = 0;
+        } catch(e) { alert("Failed uploading product context."); }
+    };
+
+    // Filter stock list to show ONLY this seller's products
+    function runLiveInventoryListener(vendorUid) {
+        const stockQuery = query(collection(db, "products"), where("sellerId", "==", vendorUid));
+        onSnapshot(stockQuery, (snap) => {
+            document.getElementById('sellerProductList').innerHTML = snap.docs.map(doc => {
+                const item = doc.data();
+                const dFee = item.deliveryFee ? ` | Delivery: ₦${Number(item.deliveryFee).toLocaleString()}` : " | Delivery: ₦0";
+                return `<div class="product-item">
+                    <img src="${item.image}">
+                    <div style="flex:1">
+                        <b>${item.name}</b><br>
+                        <small>₦${Number(item.price).toLocaleString()}${dFee}</small>
+                    </div>
+                    <button class="del-btn" data-id="${doc.id}" style="background:var(--red); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </div>`;
+            }).join('');
+
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if(confirm("Are you sure you want to pull this item from store records?")) {
+                        await deleteDoc(doc(db, "products", btn.dataset.id));
+                    }
+                };
+            });
+        });
+    }
+
+    // Filter incoming orders to show ONLY items matching this store's name
+    function runLiveOrdersListener(storeName) {
+        const ordersQuery = query(collection(db, "orders"), orderBy("timestamp", "desc"));
+        onSnapshot(ordersQuery, (snap) => {
+            let recordsHtml = "";
+            
+            snap.docs.forEach(oDoc => {
+                const orderData = oDoc.data();
+                if(!orderData.items || !Array.isArray(orderData.items)) return;
+
+                const myOwnedItems = orderData.items.filter(item => item.sellerName === storeName);
+                if(myOwnedItems.length === 0) return; 
+
+                let innerItemsHtml = myOwnedItems.map(item => `
+                    <div class="order-item-row">
+                        <span>${item.qty || 1}x ${item.name}</span>
+                        <b style="color:var(--orange)">₦${Number(item.price * (item.qty || 1)).toLocaleString()}</b>
+                    </div>
+                `).join('');
+
+                recordsHtml += `<div class="order-card">
+                    <div style="display:flex; justify-content:between; align-items:center; margin-bottom:10px;">
+                        <span class="order-id-tag">ID: ${orderData.orderId}</span>
+                        <span style="margin-left:auto; font-size:12px; font-weight:bold; color:#777;">Status: ${orderData.status || 'Pending'}</span>
+                    </div>
+                    <div style="font-size:14px; color:#333; font-weight:600; margin-bottom:5px;">Customer: ${orderData.customerName}</div>
+                    <div style="font-size:13px; color:#555; margin-bottom:5px;"><i class="fas fa-phone"></i> Contact: ${orderData.phone}</div>
+                    <div style="font-size:13px; color:#555;"><i class="fas fa-map-marker-alt"></i> Address: ${orderData.address}</div>
+                    
+                    <div class="order-items-box">
+                        <div style="font-size:11px; font-weight:bold; color:var(--blue); text-transform:uppercase; margin-bottom:5px;">Your Sold Items:</div>
+                        ${innerItemsHtml}
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('sellerOrderList').innerHTML = recordsHtml || `<p style="text-align:center; color:#888; font-size:14px; margin-top:20px;">No sales orders verified yet.</p>`;
+        });
+    }
+</script>
+</body>
+</html>
